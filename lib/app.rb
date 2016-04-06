@@ -9,12 +9,6 @@ def setup_files
     $report_file = File.new("report.txt", "w+")
 end
 
-# methods go here
-def start
-  setup_files # load, read, parse, and create the files
-  #create_report # create the report!
-end
-
 def sales_heading
 	" __       _               __                       _\n" <<
 	"/ _\\ __ _| | ___  ___    /__\\ ___ _ __   ___  _ __| |_ \n" <<
@@ -54,27 +48,96 @@ def print_heading(type='sales')
 end
 
 
-start # call start method to trigger report generation
-
-# Print "Sales Report" in ascii art
-print_heading
-
 # Print today's date
 
-# Print "Products" in ascii art
-print_heading('products')
-# For each product in the data set:
-	# Print the name of the toy
-	# Print the retail price of the toy
-	# Calculate and print the total number of purchases
-	# Calculate and print the total amount of sales
-	# Calculate and print the average price the toy sold for
-	# Calculate and print the average discount (% or $) based off the average sales price
+def products_data
+  all_products = []
 
-# Print "Brands" in ascii art
-print_heading('brands')
-# For each brand in the data set:
-	# Print the name of the brand
-	# Count and print the number of the brand's toys we stock
-	# Calculate and print the average price of the brand's toys
-	# Calculate and print the total sales volume of all the brand's toys combined
+	$products_hash["items"].each do |toy|
+	  count_of_purchases = toy['purchases'].size
+	  total_sales = toy['purchases'].reduce(0) { |total, t| total += t['price'] }
+	  average_price = total_sales / count_of_purchases
+    average_discount = (count_of_purchases * toy['full-price'].to_f - total_sales) / count_of_purchases
+    average_discount_percentage = (average_discount * 100 / toy['full-price'].to_f).round(2)
+
+	  product_item = {}
+	  product_item['Title'] = toy['title']
+	  product_item['Retail Price'] = "$#{toy['full-price']}"
+	  product_item['Total Purchases'] = count_of_purchases
+	  product_item['Total Sales'] = "$#{total_sales}"
+	  product_item['Average Price'] = "$#{average_price}"
+    product_item['Average Discount'] = "$#{average_discount}"
+    product_item['Average Discount Percentage'] = "#{average_discount_percentage}%"
+
+    all_products << product_item
+	end
+
+	all_products
+end
+
+def brands_data
+  all_brands = []
+	brands = $products_hash["items"].map {|item| item['brand']}.uniq
+
+	brands.each do |brand|
+	  items = $products_hash["items"].select {|item| item['brand'] == brand}
+	  stock = items.reduce(0) {|total, item| total += item['stock']}
+	  average_price = ((items.reduce(0) {|total, item| total += item['full-price'].to_f}) / items.size).round(2)
+	  purchases = items.map {|item| item['purchases']}.flatten
+    total_sales = purchases.reduce(0.0) {|total, item| total += item['price']}
+
+		brand_item = {}
+	  brand_item['Title'] = brand.upcase
+	  brand_item['Number of Products'] = stock
+	  brand_item['Average Product Price'] = "$#{average_price}"
+	  brand_item['Total Sales'] = "$#{total_sales.round(2)}"
+
+	  all_brands << brand_item
+	end
+
+	all_brands
+end
+
+def print_hash(hash)
+  hash.each do |item|
+		puts item.shift.last # Print title
+		puts "********************"
+		item.each do |key, value|
+		  puts "#{key}: #{value}"
+		end
+		puts "********************\n\n"
+	end
+end
+
+def print_data(options = {})
+	data = []
+
+	if options[:type] == 'products'
+		print_heading('products')
+		data = products_data
+	elsif options[:type] == 'brands'
+		print_heading('brands')
+		data = brands_data
+	end
+
+	print_hash(data)
+end
+
+def print_today
+  puts "Today's Date: #{Time.now.strftime("%m/%d/%Y")}"
+  puts
+end
+
+def create_report
+	print_heading
+	print_today
+	print_data({type: 'products'})
+	print_data({type: 'brands'})
+end
+
+def start
+  setup_files # load, read, parse, and create the files
+  create_report # create the report!
+end
+
+start
