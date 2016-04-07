@@ -1,7 +1,5 @@
 require 'json'
 
-# Get path to products.json, read the file into a string,
-# and transform the string into a usable hash
 def setup_files
     path = File.join(File.dirname(__FILE__), '../data/products.json')
     file = File.read(path)
@@ -39,16 +37,17 @@ def brands_heading
 end
 
 def print_heading(type='sales')
-  puts case type
-  	   when 'sales'    then sales_heading
-       when 'products' then products_heading
-       when 'brands'   then brands_heading
-       else 'There is no proper heading for this!'
-       end
+  print_to_file  case type
+					  	   when 'sales'    then sales_heading
+					       when 'products' then products_heading
+					       when 'brands'   then brands_heading
+					       else 'There is no proper heading for this!'
+					       end
 end
 
-
-# Print today's date
+def print_to_file(text)
+	$report_file.puts text
+end
 
 def products_data
   all_products = []
@@ -99,14 +98,17 @@ def brands_data
 end
 
 def print_hash(hash)
+  lines = []
   hash.each do |item|
-		puts item.shift.last # Print title
-		puts "********************"
+		lines << item.shift.last # Print title
+		lines << "********************"
 		item.each do |key, value|
-		  puts "#{key}: #{value}"
+		  lines << "#{key}: #{value}"
 		end
-		puts "********************\n\n"
+		lines << "********************\n"
 	end
+
+	print_to_file lines.join("\n")
 end
 
 def print_data(options = {})
@@ -124,8 +126,7 @@ def print_data(options = {})
 end
 
 def print_today
-  puts "Today's Date: #{Time.now.strftime("%m/%d/%Y")}"
-  puts
+  print_to_file "Today's Date: #{Time.now.strftime("%m/%d/%Y")}\n"
 end
 
 def create_report
@@ -133,11 +134,12 @@ def create_report
 	print_today
 	print_data({type: 'products'})
 	print_data({type: 'brands'})
+	print "Sales report printed into report.txt."
 end
 
 def start
-  setup_files # load, read, parse, and create the files
-  create_report # create the report!
+  setup_files
+  create_report
 end
 
 start
